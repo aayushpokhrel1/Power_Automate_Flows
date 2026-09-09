@@ -45,7 +45,7 @@ The design is: figure out the Downloads path, then for each category, grab the m
 
 **Action: `Set variable`**
 - Variable: `Report`
-- Value: leave the value **empty**
+- Value: `%''%`  *(PAD's empty-text expression, the field won't accept a truly blank value)*
 
 > `Report` is the running text we'll show at the end. `DryRun = True` means "report only, don't move." You'll flip it to `False` once you trust it.
 
