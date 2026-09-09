@@ -1,0 +1,27 @@
+# =============================================================================
+# Resume Router  -  Power Automate Desktop paste-in
+# =============================================================================
+# Moves downloaded "resume - <slug>" files into <AppRoot>\<slug>. Manual run.
+# Set AppRoot below to your applications folder before running.
+# Best-effort paste; recipe.md is the source of truth if anything looks off.
+# =============================================================================
+
+# ---- 8< ---- paste from here ---- 8< ----
+
+System.GetEnvironmentVariable EnvironmentVariableName: $'''USERPROFILE''' EnvironmentVariableValue=> UserProfile
+SET AppRoot TO $'''%UserProfile%\\dev\\Projects\\job-search\\documents\\applications'''
+Folder.GetFiles Folder: $'''%UserProfile%\\Downloads''' FileFilter: $'''resume - *''' IncludeSubfolders: False FailOnAccessDenied: True Files=> ResumeFiles
+IF ResumeFiles.Count = 0 THEN
+    Display.ShowMessageDialog.ShowMessage Title: $'''Resume Router''' Message: $'''No resumes found in Downloads.''' Icon: Display.Icon.None Buttons: Display.Buttons.OK DefaultButton: Display.DefaultButton.Button1 IsTopMost: False ButtonPressed=> ButtonPressed
+    EXIT Code: 0 ErrorMessage: $''''''
+END
+LOOP FOREACH CurrentFile IN ResumeFiles
+    Text.Split Text: $'''%CurrentFile.NameWithoutExtension%''' CustomDelimiter: $''' - ''' Result=> NameParts
+    Text.Trim Text: $'''%NameParts[1]%''' TrimOption: Text.TrimOption.LeadingAndTrailing Result=> Slug
+    SET Dest TO $'''%AppRoot%\\%Slug%'''
+    Folder.IfFolderExists.Exists Path: $'''%Dest%'''
+        File.Move Files: CurrentFile Destination: $'''%Dest%''' IfFileExists: File.IfExists.DoNothing MovedFiles=> MovedFiles
+    ELSE
+        Display.ShowMessageDialog.ShowMessage Title: $'''Resume Router''' Message: $'''Move by hand: %CurrentFile.Name% - no folder for "%Slug%" under %AppRoot%''' Icon: Display.Icon.None Buttons: Display.Buttons.OK DefaultButton: Display.DefaultButton.Button1 IsTopMost: False ButtonPressed=> ButtonPressed2
+    END
+END
