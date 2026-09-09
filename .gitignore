@@ -1,0 +1,10 @@
+# logs and local run output
+*.log
+
+# local, non-shareable exports (drop real .zip exports in cloud/*/ deliberately)
+scratch/
+*.tmp
+
+# OS cruft
+Thumbs.db
+.DS_Store
