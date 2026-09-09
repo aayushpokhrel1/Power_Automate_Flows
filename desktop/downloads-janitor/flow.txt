@@ -26,7 +26,7 @@ IF MatchedFiles.Count > 0 THEN
     END
     SET Report TO $'''%Report%Images: %MatchedFiles.Count%;  '''
     IF DryRun = False THEN
-        File.Move Files: MatchedFiles Destination: $'''%DownloadsFolder%\\Images''' IfFileExists: File.IfExists.Rename MovedFiles=> MovedFiles
+        File.Move Files: MatchedFiles Destination: $'''%DownloadsFolder%\\Images''' IfFileExists: File.IfExists.DoNothing MovedFiles=> MovedFiles
     END
 END
 
@@ -38,7 +38,7 @@ IF MatchedFiles.Count > 0 THEN
     END
     SET Report TO $'''%Report%Documents: %MatchedFiles.Count%;  '''
     IF DryRun = False THEN
-        File.Move Files: MatchedFiles Destination: $'''%DownloadsFolder%\\Documents''' IfFileExists: File.IfExists.Rename MovedFiles=> MovedFiles
+        File.Move Files: MatchedFiles Destination: $'''%DownloadsFolder%\\Documents''' IfFileExists: File.IfExists.DoNothing MovedFiles=> MovedFiles
     END
 END
 
@@ -50,7 +50,7 @@ IF MatchedFiles.Count > 0 THEN
     END
     SET Report TO $'''%Report%Spreadsheets: %MatchedFiles.Count%;  '''
     IF DryRun = False THEN
-        File.Move Files: MatchedFiles Destination: $'''%DownloadsFolder%\\Spreadsheets''' IfFileExists: File.IfExists.Rename MovedFiles=> MovedFiles
+        File.Move Files: MatchedFiles Destination: $'''%DownloadsFolder%\\Spreadsheets''' IfFileExists: File.IfExists.DoNothing MovedFiles=> MovedFiles
     END
 END
 
@@ -62,7 +62,7 @@ IF MatchedFiles.Count > 0 THEN
     END
     SET Report TO $'''%Report%Presentations: %MatchedFiles.Count%;  '''
     IF DryRun = False THEN
-        File.Move Files: MatchedFiles Destination: $'''%DownloadsFolder%\\Presentations''' IfFileExists: File.IfExists.Rename MovedFiles=> MovedFiles
+        File.Move Files: MatchedFiles Destination: $'''%DownloadsFolder%\\Presentations''' IfFileExists: File.IfExists.DoNothing MovedFiles=> MovedFiles
     END
 END
 
@@ -74,7 +74,7 @@ IF MatchedFiles.Count > 0 THEN
     END
     SET Report TO $'''%Report%Archives: %MatchedFiles.Count%;  '''
     IF DryRun = False THEN
-        File.Move Files: MatchedFiles Destination: $'''%DownloadsFolder%\\Archives''' IfFileExists: File.IfExists.Rename MovedFiles=> MovedFiles
+        File.Move Files: MatchedFiles Destination: $'''%DownloadsFolder%\\Archives''' IfFileExists: File.IfExists.DoNothing MovedFiles=> MovedFiles
     END
 END
 
@@ -86,7 +86,7 @@ IF MatchedFiles.Count > 0 THEN
     END
     SET Report TO $'''%Report%Installers: %MatchedFiles.Count%;  '''
     IF DryRun = False THEN
-        File.Move Files: MatchedFiles Destination: $'''%DownloadsFolder%\\Installers''' IfFileExists: File.IfExists.Rename MovedFiles=> MovedFiles
+        File.Move Files: MatchedFiles Destination: $'''%DownloadsFolder%\\Installers''' IfFileExists: File.IfExists.DoNothing MovedFiles=> MovedFiles
     END
 END
 
@@ -98,7 +98,7 @@ IF MatchedFiles.Count > 0 THEN
     END
     SET Report TO $'''%Report%Audio: %MatchedFiles.Count%;  '''
     IF DryRun = False THEN
-        File.Move Files: MatchedFiles Destination: $'''%DownloadsFolder%\\Audio''' IfFileExists: File.IfExists.Rename MovedFiles=> MovedFiles
+        File.Move Files: MatchedFiles Destination: $'''%DownloadsFolder%\\Audio''' IfFileExists: File.IfExists.DoNothing MovedFiles=> MovedFiles
     END
 END
 
@@ -110,7 +110,7 @@ IF MatchedFiles.Count > 0 THEN
     END
     SET Report TO $'''%Report%Video: %MatchedFiles.Count%;  '''
     IF DryRun = False THEN
-        File.Move Files: MatchedFiles Destination: $'''%DownloadsFolder%\\Video''' IfFileExists: File.IfExists.Rename MovedFiles=> MovedFiles
+        File.Move Files: MatchedFiles Destination: $'''%DownloadsFolder%\\Video''' IfFileExists: File.IfExists.DoNothing MovedFiles=> MovedFiles
     END
 END
 

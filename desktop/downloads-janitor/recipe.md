@@ -8,7 +8,7 @@ Sorts everything in your Downloads folder into category subfolders (`Images`, `D
 
 - A report dialog showing how many files fall into each category.
 - A **Dry run** switch (on by default) so the first run only *reports* and moves nothing.
-- Safe moves: never overwrites (auto-renames `file (2).pdf`), and in-progress downloads (`.crdownload`, `.part`) are skipped automatically because they don't match any category filter.
+- Safe moves: never overwrites (a same-name clash is left in place), and in-progress downloads (`.crdownload`, `.part`) are skipped automatically because they don't match any category filter.
 
 ---
 
@@ -84,7 +84,7 @@ Inside that `If`:
 &nbsp;&nbsp;&nbsp;&nbsp;Inside it, **Action: `Move file(s)`**
 &nbsp;&nbsp;&nbsp;&nbsp;- Files to move: `%MatchedFiles%`
 &nbsp;&nbsp;&nbsp;&nbsp;- Destination folder: `%DownloadsFolder%\Images`
-&nbsp;&nbsp;&nbsp;&nbsp;- If file exists: **Rename**  *(this is what prevents overwrites)*
+&nbsp;&nbsp;&nbsp;&nbsp;- If file exists: **Do nothing**  *(Move only offers Overwrite or Do nothing; Do nothing never overwrites, a rare same-name file just stays in Downloads)*
 
 That's one category. **Copy the whole `If %MatchedFiles.Count% > 0` block** and paste it 7 more times, changing only the **file filter**, the two **folder names** (`Images` → ...), and the **report label**:
 
@@ -118,7 +118,7 @@ Run it. You'll see something like `Images: 12;  Documents: 3;  Archives: 1;`.
 
 1. **First run with `DryRun = True`** (the default). Nothing moves. Check the report dialog matches what's actually in your Downloads folder.
 2. Optionally, make a throwaway folder with a few junk files and point `DownloadsFolder` at it for one run.
-3. When you trust it, set `DryRun` to `False` and run for real. Because moves use **Rename on conflict**, a name clash creates `file (2).ext`, it never overwrites.
+3. When you trust it, set `DryRun` to `False` and run for real. Moves use **Do nothing on conflict**, so a same-name clash leaves that file in Downloads untouched, it never overwrites.
 
 ## Schedule it (optional)
 
