@@ -1,14 +1,12 @@
 # =============================================================================
-# Downloads Janitor  -  Power Automate Desktop paste-in
+# Downloads Janitor  -  Power Automate Desktop paste-in  (single-loop design)
 # =============================================================================
 # HOW TO USE: open a new PAD flow, click the empty workspace, and paste the
-# block BELOW the line marker (everything from "System.GetEnvironmentVariable"
-# down). PAD reconstructs the actions.
+# block BELOW the 8< marker. PAD reconstructs the actions.
 #
-# This paste text is a CONVENIENCE and is best-effort across PAD versions.
-# If the paste fails or an action looks off, recipe.md is the source of truth,
-# build it there in ~10 minutes. Lines starting with # are comments; PAD
-# ignores them, but if a paste ever chokes, delete the comment lines first.
+# Best-effort across PAD versions. This flow uses the Contains operator and an
+# If/Else-if chain that some PAD builds paste imperfectly. If anything looks
+# off after pasting, recipe.md is the source of truth, build it there.
 # =============================================================================
 
 # ---- 8< ---- paste from here ---- 8< ----
@@ -16,102 +14,48 @@
 System.GetEnvironmentVariable EnvironmentVariableName: $'''USERPROFILE''' EnvironmentVariableValue=> UserProfile
 SET DownloadsFolder TO $'''%UserProfile%\\Downloads'''
 SET DryRun TO True
-SET Report TO $''''''
-
-# --- Images ---
-Folder.GetFiles Folder: $'''%DownloadsFolder%''' FileFilter: $'''*.jpg;*.jpeg;*.png;*.gif;*.webp;*.svg;*.bmp;*.heic;*.tiff;*.ico''' IncludeSubfolders: False FailOnAccessDenied: True Files=> MatchedFiles
-IF MatchedFiles.Count > 0 THEN
-    Folder.IfFolderExists.DoesNotExist Path: $'''%DownloadsFolder%\\Images'''
-        Folder.Create FolderPath: $'''%DownloadsFolder%''' FolderName: $'''Images''' Folder=> NewFolder
+SET Categorized TO 0
+SET LeftAlone TO 0
+SET ImagesExt TO $''';.jpg;.jpeg;.png;.gif;.webp;.svg;.bmp;.heic;.tiff;.ico;'''
+SET DocumentsExt TO $''';.pdf;.doc;.docx;.txt;.md;.rtf;.odt;.epub;'''
+SET SpreadsheetsExt TO $''';.xls;.xlsx;.csv;.ods;'''
+SET PresentationsExt TO $''';.ppt;.pptx;.odp;'''
+SET ArchivesExt TO $''';.zip;.rar;.7z;.tar;.gz;.bz2;'''
+SET InstallersExt TO $''';.exe;.msi;'''
+SET AudioExt TO $''';.mp3;.wav;.flac;.m4a;.aac;.ogg;'''
+SET VideoExt TO $''';.mp4;.mov;.avi;.mkv;.webm;.wmv;'''
+Folder.GetFiles Folder: $'''%DownloadsFolder%''' FileFilter: $'''*''' IncludeSubfolders: False FailOnAccessDenied: True Files=> Files
+LOOP FOREACH CurrentFile IN Files
+    Text.ChangeCase Text: $'''%CurrentFile.Extension%''' CaseType: Text.CaseType.Lowercase Result=> Ext
+    SET TargetName TO $''''''
+    IF ImagesExt Contains $''';%Ext%;''' THEN
+        SET TargetName TO $'''Images'''
+    ELSE IF DocumentsExt Contains $''';%Ext%;''' THEN
+        SET TargetName TO $'''Documents'''
+    ELSE IF SpreadsheetsExt Contains $''';%Ext%;''' THEN
+        SET TargetName TO $'''Spreadsheets'''
+    ELSE IF PresentationsExt Contains $''';%Ext%;''' THEN
+        SET TargetName TO $'''Presentations'''
+    ELSE IF ArchivesExt Contains $''';%Ext%;''' THEN
+        SET TargetName TO $'''Archives'''
+    ELSE IF InstallersExt Contains $''';%Ext%;''' THEN
+        SET TargetName TO $'''Installers'''
+    ELSE IF AudioExt Contains $''';%Ext%;''' THEN
+        SET TargetName TO $'''Audio'''
+    ELSE IF VideoExt Contains $''';%Ext%;''' THEN
+        SET TargetName TO $'''Video'''
     END
-    SET Report TO $'''%Report%Images: %MatchedFiles.Count%;  '''
-    IF DryRun = False THEN
-        File.Move Files: MatchedFiles Destination: $'''%DownloadsFolder%\\Images''' IfFileExists: File.IfExists.DoNothing MovedFiles=> MovedFiles
-    END
-END
-
-# --- Documents ---
-Folder.GetFiles Folder: $'''%DownloadsFolder%''' FileFilter: $'''*.pdf;*.doc;*.docx;*.txt;*.md;*.rtf;*.odt;*.epub''' IncludeSubfolders: False FailOnAccessDenied: True Files=> MatchedFiles
-IF MatchedFiles.Count > 0 THEN
-    Folder.IfFolderExists.DoesNotExist Path: $'''%DownloadsFolder%\\Documents'''
-        Folder.Create FolderPath: $'''%DownloadsFolder%''' FolderName: $'''Documents''' Folder=> NewFolder
-    END
-    SET Report TO $'''%Report%Documents: %MatchedFiles.Count%;  '''
-    IF DryRun = False THEN
-        File.Move Files: MatchedFiles Destination: $'''%DownloadsFolder%\\Documents''' IfFileExists: File.IfExists.DoNothing MovedFiles=> MovedFiles
-    END
-END
-
-# --- Spreadsheets ---
-Folder.GetFiles Folder: $'''%DownloadsFolder%''' FileFilter: $'''*.xls;*.xlsx;*.csv;*.ods''' IncludeSubfolders: False FailOnAccessDenied: True Files=> MatchedFiles
-IF MatchedFiles.Count > 0 THEN
-    Folder.IfFolderExists.DoesNotExist Path: $'''%DownloadsFolder%\\Spreadsheets'''
-        Folder.Create FolderPath: $'''%DownloadsFolder%''' FolderName: $'''Spreadsheets''' Folder=> NewFolder
-    END
-    SET Report TO $'''%Report%Spreadsheets: %MatchedFiles.Count%;  '''
-    IF DryRun = False THEN
-        File.Move Files: MatchedFiles Destination: $'''%DownloadsFolder%\\Spreadsheets''' IfFileExists: File.IfExists.DoNothing MovedFiles=> MovedFiles
-    END
-END
-
-# --- Presentations ---
-Folder.GetFiles Folder: $'''%DownloadsFolder%''' FileFilter: $'''*.ppt;*.pptx;*.odp''' IncludeSubfolders: False FailOnAccessDenied: True Files=> MatchedFiles
-IF MatchedFiles.Count > 0 THEN
-    Folder.IfFolderExists.DoesNotExist Path: $'''%DownloadsFolder%\\Presentations'''
-        Folder.Create FolderPath: $'''%DownloadsFolder%''' FolderName: $'''Presentations''' Folder=> NewFolder
-    END
-    SET Report TO $'''%Report%Presentations: %MatchedFiles.Count%;  '''
-    IF DryRun = False THEN
-        File.Move Files: MatchedFiles Destination: $'''%DownloadsFolder%\\Presentations''' IfFileExists: File.IfExists.DoNothing MovedFiles=> MovedFiles
+    IF TargetName <> $'''''' THEN
+        SET TargetPath TO $'''%DownloadsFolder%\\%TargetName%'''
+        Folder.IfFolderExists.DoesNotExist Path: $'''%TargetPath%'''
+            Folder.Create FolderPath: $'''%DownloadsFolder%''' FolderName: $'''%TargetName%''' Folder=> NewFolder
+        END
+        SET Categorized TO Categorized + 1
+        IF DryRun = False THEN
+            File.Move Files: CurrentFile Destination: $'''%TargetPath%''' IfFileExists: File.IfExists.DoNothing MovedFiles=> MovedFiles
+        END
+    ELSE
+        SET LeftAlone TO LeftAlone + 1
     END
 END
-
-# --- Archives ---
-Folder.GetFiles Folder: $'''%DownloadsFolder%''' FileFilter: $'''*.zip;*.rar;*.7z;*.tar;*.gz;*.bz2''' IncludeSubfolders: False FailOnAccessDenied: True Files=> MatchedFiles
-IF MatchedFiles.Count > 0 THEN
-    Folder.IfFolderExists.DoesNotExist Path: $'''%DownloadsFolder%\\Archives'''
-        Folder.Create FolderPath: $'''%DownloadsFolder%''' FolderName: $'''Archives''' Folder=> NewFolder
-    END
-    SET Report TO $'''%Report%Archives: %MatchedFiles.Count%;  '''
-    IF DryRun = False THEN
-        File.Move Files: MatchedFiles Destination: $'''%DownloadsFolder%\\Archives''' IfFileExists: File.IfExists.DoNothing MovedFiles=> MovedFiles
-    END
-END
-
-# --- Installers ---
-Folder.GetFiles Folder: $'''%DownloadsFolder%''' FileFilter: $'''*.exe;*.msi''' IncludeSubfolders: False FailOnAccessDenied: True Files=> MatchedFiles
-IF MatchedFiles.Count > 0 THEN
-    Folder.IfFolderExists.DoesNotExist Path: $'''%DownloadsFolder%\\Installers'''
-        Folder.Create FolderPath: $'''%DownloadsFolder%''' FolderName: $'''Installers''' Folder=> NewFolder
-    END
-    SET Report TO $'''%Report%Installers: %MatchedFiles.Count%;  '''
-    IF DryRun = False THEN
-        File.Move Files: MatchedFiles Destination: $'''%DownloadsFolder%\\Installers''' IfFileExists: File.IfExists.DoNothing MovedFiles=> MovedFiles
-    END
-END
-
-# --- Audio ---
-Folder.GetFiles Folder: $'''%DownloadsFolder%''' FileFilter: $'''*.mp3;*.wav;*.flac;*.m4a;*.aac;*.ogg''' IncludeSubfolders: False FailOnAccessDenied: True Files=> MatchedFiles
-IF MatchedFiles.Count > 0 THEN
-    Folder.IfFolderExists.DoesNotExist Path: $'''%DownloadsFolder%\\Audio'''
-        Folder.Create FolderPath: $'''%DownloadsFolder%''' FolderName: $'''Audio''' Folder=> NewFolder
-    END
-    SET Report TO $'''%Report%Audio: %MatchedFiles.Count%;  '''
-    IF DryRun = False THEN
-        File.Move Files: MatchedFiles Destination: $'''%DownloadsFolder%\\Audio''' IfFileExists: File.IfExists.DoNothing MovedFiles=> MovedFiles
-    END
-END
-
-# --- Video ---
-Folder.GetFiles Folder: $'''%DownloadsFolder%''' FileFilter: $'''*.mp4;*.mov;*.avi;*.mkv;*.webm;*.wmv''' IncludeSubfolders: False FailOnAccessDenied: True Files=> MatchedFiles
-IF MatchedFiles.Count > 0 THEN
-    Folder.IfFolderExists.DoesNotExist Path: $'''%DownloadsFolder%\\Video'''
-        Folder.Create FolderPath: $'''%DownloadsFolder%''' FolderName: $'''Video''' Folder=> NewFolder
-    END
-    SET Report TO $'''%Report%Video: %MatchedFiles.Count%;  '''
-    IF DryRun = False THEN
-        File.Move Files: MatchedFiles Destination: $'''%DownloadsFolder%\\Video''' IfFileExists: File.IfExists.DoNothing MovedFiles=> MovedFiles
-    END
-END
-
-Display.ShowMessageDialog.ShowMessage Title: $'''Downloads Janitor''' Message: $'''Dry run: %DryRun%    %Report%''' Icon: Display.Icon.None Buttons: Display.Buttons.OK DefaultButton: Display.DefaultButton.Button1 IsTopMost: False ButtonPressed=> ButtonPressed
+Display.ShowMessageDialog.ShowMessage Title: $'''Downloads Janitor''' Message: $'''Dry run: %DryRun%    Categorized: %Categorized%    Left alone: %LeftAlone%''' Icon: Display.Icon.None Buttons: Display.Buttons.OK DefaultButton: Display.DefaultButton.Button1 IsTopMost: False ButtonPressed=> ButtonPressed

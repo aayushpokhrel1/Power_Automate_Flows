@@ -4,129 +4,126 @@ Sorts everything in your Downloads folder into category subfolders (`Images`, `D
 
 **Pure PAD**: built entirely from native Power Automate Desktop actions, no PowerShell, no scripts, no paid connectors.
 
+## Design
+
+One loop over **all** files in Downloads. For each file: lowercase its extension, match it against eight category lists to pick a target folder, then (unless it's a dry run) move it. Files whose extension isn't in any list, including in-progress downloads like `.crdownload` and `.part`, are simply left alone.
+
 ## What you get
 
-- A report dialog showing how many files fall into each category.
+- A report dialog: how many files were categorized vs left alone.
 - A **Dry run** switch (on by default) so the first run only *reports* and moves nothing.
-- Safe moves: never overwrites (a same-name clash is left in place), and in-progress downloads (`.crdownload`, `.part`) are skipped automatically because they don't match any category filter.
+- Safe moves: never overwrites (a same-name clash is left in place), unknown/in-progress files untouched.
 
 ---
 
 ## Fastest path: paste it in
 
 1. Open **Power Automate Desktop** → **New flow** → name it `Downloads Janitor`.
-2. In the flow editor, click once in the empty actions workspace.
-3. Open [`flow.txt`](flow.txt), copy all of it, and **paste** (Ctrl+V) into the workspace. The actions reconstruct themselves.
-4. Press **Run**. With Dry run on, you'll get a report and nothing moves. Read [Test it safely](#test-it-safely) before turning Dry run off.
+2. Click once in the empty actions workspace.
+3. Open [`flow.txt`](flow.txt), copy the block below its `8<` marker, and **paste** (Ctrl+V).
+4. Press **Run**. Dry run is on, so you'll get a report and nothing moves.
 
-If the paste doesn't work on your PAD version, build it by hand below, it's the same flow and takes about ten minutes.
+This flow uses the `Contains` operator and an If/Else-if chain that some PAD versions paste imperfectly. If the paste looks off, build it by hand below, it's the reliable path and takes ~10 minutes.
 
 ---
 
 ## Build it by hand (and understand every step)
 
-The design is: figure out the Downloads path, then for each category, grab the matching files, make the folder if needed, and (unless it's a dry run) move them. Concepts you'll learn here, folder actions, `If`, list `.Count`, string building, get reused in every future flow.
+### 1. Set up variables
 
-### 1. Set up the variables
+**`Get environment variable`** → Name `USERPROFILE`, save to `UserProfile`
+**`Set variable`** → `DownloadsFolder` = `%UserProfile%\Downloads`
+**`Set variable`** → `DryRun` = `True`
+**`Set variable`** → `Categorized` = `0`
+**`Set variable`** → `LeftAlone` = `0`
 
-**Action: `Get environment variable`**
-- Name: `USERPROFILE`
-- Save to: `UserProfile`
+Now the eight category lists. Each is a **`Set variable`** whose value is the extensions wrapped in semicolons (the wrapping `;` is what makes the match exact, so `.pt` never matches inside `.pptx`). **Include the leading dots**, PAD's file extension property returns them.
 
-> This is your user folder (e.g. `C:\Users\you`) without hardcoding your name, which keeps the flow shareable.
+| Variable | Value |
+|----------|-------|
+| `ImagesExt` | `;.jpg;.jpeg;.png;.gif;.webp;.svg;.bmp;.heic;.tiff;.ico;` |
+| `DocumentsExt` | `;.pdf;.doc;.docx;.txt;.md;.rtf;.odt;.epub;` |
+| `SpreadsheetsExt` | `;.xls;.xlsx;.csv;.ods;` |
+| `PresentationsExt` | `;.ppt;.pptx;.odp;` |
+| `ArchivesExt` | `;.zip;.rar;.7z;.tar;.gz;.bz2;` |
+| `InstallersExt` | `;.exe;.msi;` |
+| `AudioExt` | `;.mp3;.wav;.flac;.m4a;.aac;.ogg;` |
+| `VideoExt` | `;.mp4;.mov;.avi;.mkv;.webm;.wmv;` |
 
-**Action: `Set variable`**
-- Variable: `DownloadsFolder`
-- Value: `%UserProfile%\Downloads`
+### 2. Get the files
 
-**Action: `Set variable`**
-- Variable: `DryRun`
-- Value: `True`  *(type it as a General value; PAD treats it as a boolean)*
-
-**Action: `Set variable`**
-- Variable: `Report`
-- Value: `%''%`  *(PAD's empty-text expression, the field won't accept a truly blank value)*
-
-> `Report` is the running text we'll show at the end. `DryRun = True` means "report only, don't move." You'll flip it to `False` once you trust it.
-
-### 2. One block per category
-
-You'll repeat the same three-action pattern for each category. Here it is in full for **Images**, then a table of the values to plug in for the rest.
-
-**Action: `Get files in folder`**
+**`Get files in folder`**
 - Folder: `%DownloadsFolder%`
-- File filter: `*.jpg;*.jpeg;*.png;*.gif;*.webp;*.svg;*.bmp;*.heic;*.tiff;*.ico`
+- File filter: `*`
 - Include subfolders: **Off**
-- Save file list to: `MatchedFiles`
+- Save file list to: `Files`
 
-**Action: `If`**
-- First operand: `%MatchedFiles.Count%`
-- Operator: **Greater than**
-- Second operand: `0`
+### 3. Loop over each file
 
-Inside that `If`:
+**`For each`** → Value to iterate `%Files%`, store in `CurrentFile`.
 
-&nbsp;&nbsp;**Action: `If folder exists`**
-&nbsp;&nbsp;- Folder path: `%DownloadsFolder%\Images`
-&nbsp;&nbsp;- Condition: **Folder does not exist**
+Everything below goes **inside** the loop.
 
-&nbsp;&nbsp;&nbsp;&nbsp;Inside it, **Action: `Create folder`**
-&nbsp;&nbsp;&nbsp;&nbsp;- Create new folder in: `%DownloadsFolder%`
-&nbsp;&nbsp;&nbsp;&nbsp;- New folder name: `Images`
+**`Change text case`** *(this normalizes the extension so `.JPG` matches `.jpg`)*
+- Text to convert: `%CurrentFile.Extension%`
+- Convert to: **lowercase**
+- Save to: `Ext`
 
-&nbsp;&nbsp;**Action: `Set variable`** (append to the report)
-&nbsp;&nbsp;- Variable: `Report`
-&nbsp;&nbsp;- Value: `%Report%Images: %MatchedFiles.Count%;  `
+**`Set variable`** → `TargetName` = `%''%`  *(empty; the folder we'll decide next)*
 
-&nbsp;&nbsp;**Action: `If`**
-&nbsp;&nbsp;- First operand: `%DryRun%`  Operator: **Equal to**  Second operand: `False`
+**`If`** → First operand `%ImagesExt%`, operator **Contains**, second operand `;%Ext%;`
+&nbsp;&nbsp;inside: **`Set variable`** `TargetName` = `Images`
 
-&nbsp;&nbsp;&nbsp;&nbsp;Inside it, **Action: `Move file(s)`**
-&nbsp;&nbsp;&nbsp;&nbsp;- Files to move: `%MatchedFiles%`
-&nbsp;&nbsp;&nbsp;&nbsp;- Destination folder: `%DownloadsFolder%\Images`
-&nbsp;&nbsp;&nbsp;&nbsp;- If file exists: **Do nothing**  *(Move only offers Overwrite or Do nothing; Do nothing never overwrites, a rare same-name file just stays in Downloads)*
+**`Else if`** → `%DocumentsExt%` **Contains** `;%Ext%;` → set `TargetName` = `Documents`
+**`Else if`** → `%SpreadsheetsExt%` **Contains** `;%Ext%;` → `TargetName` = `Spreadsheets`
+**`Else if`** → `%PresentationsExt%` **Contains** `;%Ext%;` → `TargetName` = `Presentations`
+**`Else if`** → `%ArchivesExt%` **Contains** `;%Ext%;` → `TargetName` = `Archives`
+**`Else if`** → `%InstallersExt%` **Contains** `;%Ext%;` → `TargetName` = `Installers`
+**`Else if`** → `%AudioExt%` **Contains** `;%Ext%;` → `TargetName` = `Audio`
+**`Else if`** → `%VideoExt%` **Contains** `;%Ext%;` → `TargetName` = `Video`
 
-That's one category. **Copy the whole `If %MatchedFiles.Count% > 0` block** and paste it 7 more times, changing only the **file filter**, the two **folder names** (`Images` → ...), and the **report label**:
+Close the If (all the Else-if branches live in one `If` action, add them with the **Else if** button inside it).
 
-| Category | File filter | Folder |
-|----------|-------------|--------|
-| Images | `*.jpg;*.jpeg;*.png;*.gif;*.webp;*.svg;*.bmp;*.heic;*.tiff;*.ico` | `Images` |
-| Documents | `*.pdf;*.doc;*.docx;*.txt;*.md;*.rtf;*.odt;*.epub` | `Documents` |
-| Spreadsheets | `*.xls;*.xlsx;*.csv;*.ods` | `Spreadsheets` |
-| Presentations | `*.ppt;*.pptx;*.odp` | `Presentations` |
-| Archives | `*.zip;*.rar;*.7z;*.tar;*.gz;*.bz2` | `Archives` |
-| Installers | `*.exe;*.msi` | `Installers` |
-| Audio | `*.mp3;*.wav;*.flac;*.m4a;*.aac;*.ogg` | `Audio` |
-| Video | `*.mp4;*.mov;*.avi;*.mkv;*.webm;*.wmv` | `Video` |
+> Building the chain: add one `If`, then use its **"New else if"** to add each of the other 7 conditions. Each branch contains a single `Set variable`.
 
-> Files whose extension is in none of these lists are left untouched, on purpose. Nothing gets moved somewhere you didn't ask for.
+**`If`** → `%TargetName%` operator **Not equal to** `%''%`  *(did we match a category?)*
 
-### 3. Show the report
+Inside this `If`:
 
-At the very end (outside all the category blocks):
+&nbsp;&nbsp;**`Set variable`** → `TargetPath` = `%DownloadsFolder%\%TargetName%`
 
-**Action: `Display message`**
+&nbsp;&nbsp;**`If folder exists`** → `%TargetPath%`, condition **does not exist**
+&nbsp;&nbsp;&nbsp;&nbsp;inside: **`Create folder`** → in `%DownloadsFolder%`, name `%TargetName%`
+
+&nbsp;&nbsp;**`Set variable`** → `Categorized` = `%Categorized + 1%`
+
+&nbsp;&nbsp;**`If`** → `%DryRun%` **Equal to** `False`
+&nbsp;&nbsp;&nbsp;&nbsp;inside: **`Move file(s)`** → Files to move `%CurrentFile%`, Destination `%TargetPath%`, If file exists **Do nothing**
+
+Add an **`Else`** to that outer `If` (the category check):
+&nbsp;&nbsp;**`Set variable`** → `LeftAlone` = `%LeftAlone + 1%`
+
+### 4. Show the report
+
+**After** the loop (`Display message`, in the **Message boxes** group):
 - Title: `Downloads Janitor`
-- Message: `Dry run: %DryRun%%Environment.NewLine%%Report%`
-- (leave the rest default)
-
-Run it. You'll see something like `Images: 12;  Documents: 3;  Archives: 1;`.
+- Message: `Dry run: %DryRun%    Categorized: %Categorized%    Left alone: %LeftAlone%`
 
 ---
 
 ## Test it safely
 
-1. **First run with `DryRun = True`** (the default). Nothing moves. Check the report dialog matches what's actually in your Downloads folder.
-2. Optionally, make a throwaway folder with a few junk files and point `DownloadsFolder` at it for one run.
-3. When you trust it, set `DryRun` to `False` and run for real. Moves use **Do nothing on conflict**, so a same-name clash leaves that file in Downloads untouched, it never overwrites.
+1. **First run, `DryRun = True`.** Nothing moves. The dialog shows how many files *would* be sorted vs left alone.
+2. If **Categorized is 0** but you have known files, your PAD returns extensions *without* the leading dot, remove the dots from the eight `...Ext` list variables and rerun.
+3. When happy, set `DryRun` to `False` and run for real. Moves use **Do nothing on conflict**, so a same-name clash is left in Downloads, never overwritten.
 
 ## Schedule it (optional)
 
-- In the **Power Automate Desktop console**, right-click the flow → schedule, or
-- Windows **Task Scheduler** → new task → action **Start a program** → `PAD.Console.Host.exe` with the flow name, on your preferred trigger (e.g. daily, or at logon).
+- **Power Automate Desktop console** → right-click the flow → schedule, or
+- Windows **Task Scheduler** → **Start a program** → `PAD.Console.Host.exe` with the flow name, on your trigger (daily, at logon, ...).
 
 ## Ideas to extend later
 
-- Add an `Other` category as a final block (`Get files` with filter `*.*`) to sweep leftovers, only after you're happy with the named categories.
-- Add a `%Environment.NewLine%`-separated log written to a file with **Write text to file** instead of a dialog.
-- Nest by month: create the destination as `%DownloadsFolder%\Images\%CurrentDateTime%` formatted `yyyy-MM`.
+- Sweep unknowns into an `Other` folder: give `TargetName` a final `Else` = `Other` before the move check.
+- Nest by month: set `TargetPath` to `%DownloadsFolder%\%TargetName%\` plus the current date formatted `yyyy-MM`.
+- Write the report to a file with **Write text to file** instead of a dialog.
