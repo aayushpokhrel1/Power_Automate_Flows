@@ -10,14 +10,11 @@
 # ---- 8< ---- paste from here ---- 8< ----
 
 Display.SelectFromListDialog Title: $'''PDF Toolkit''' Message: $'''What do you want to do?''' ItemList: $'''Merge\nSplit\nCompress''' SelectedItem=> Choice SelectedIndex=> ChoiceIndex ButtonPressed=> ButtonPressed
-IF ButtonPressed <> $'''OK''' THEN
-    EXIT Code: 0 ErrorMessage: $''''''
-END
 SET GsExe TO $'''gswin64c.exe'''
 SWITCH Choice
     CASE $'''Merge'''
         Display.SelectFolder Description: $'''Pick a folder of PDFs to merge''' SelectedFolder=> PdfFolder ButtonPressed=> FolderButton
-        IF FolderButton = $'''Select''' THEN
+        IF PdfFolder <> $'''''' THEN
             Folder.GetFiles Folder: $'''%PdfFolder%''' FileFilter: $'''*.pdf''' IncludeSubfolders: False FailOnAccessDenied: True SortBy1: Folder.SortBy.Name SortDescending1: False Files=> PdfFiles
             IF PdfFiles.Count <= 1 THEN
                 Display.ShowMessageDialog.ShowMessage Title: $'''PDF Toolkit''' Message: $'''Need at least 2 PDFs in that folder to merge.''' Icon: Display.Icon.None Buttons: Display.Buttons.OK DefaultButton: Display.DefaultButton.Button1 IsTopMost: False ButtonPressed=> B1

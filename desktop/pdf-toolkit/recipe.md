@@ -35,7 +35,7 @@ Open a **New flow**, click the workspace, paste the block below the `8<` marker 
   ```
 - Saves: `Choice` (selected item) and `ButtonPressed`.
 
-**`If`** → `%ButtonPressed%` **Not equal to** `OK`  → **`Exit`**  *(cancelled, stop cleanly)*
+> No cancel guard needed: if you close the menu, `Choice` is empty and the `Switch` below matches nothing, so the flow just ends. (PAD's explicit "end the flow" action is **Stop flow**, if you ever want an early-out.)
 
 **`Set variable`** → `GsExe` = `gswin64c.exe`  *(or the full path to Ghostscript's console exe)*
 
@@ -48,23 +48,17 @@ Open a **New flow**, click the workspace, paste the block below the `8<` marker 
 ### Case `Merge`
 
 **`Display select folder dialog`** → Description `Pick a folder of PDFs to merge` → saves `PdfFolder`, `ButtonPressed`
-**`If`** → `%ButtonPressed%` **Not equal to** `Select` (folder dialog's OK button) → **`Next loop`/skip**: simplest is wrap the rest of the case in `If %ButtonPressed% = 'Select'`.
 
-**`Get files in folder`**
-- Folder: `%PdfFolder%`
-- File filter: `*.pdf`
-- Sort by: **Name**, ascending
-- Save to: `PdfFiles`
+**`If`** → `%PdfFolder%` **is not empty**  *(picker cancelled = empty path = skip the whole case)*. Everything below goes inside this `If`.
 
-**`If`** → `%PdfFiles.Count%` **Less than or equal to** `1`
-&nbsp;&nbsp;**`Display message`** → `Need at least 2 PDFs in that folder to merge.` then **`Exit`** (or skip)
+&nbsp;&nbsp;**`Get files in folder`**
+&nbsp;&nbsp;- Folder: `%PdfFolder%`  ·  File filter: `*.pdf`  ·  Sort by: **Name**, ascending  ·  Save to: `PdfFiles`
 
-**`Merge PDF files`**
-- PDF files to merge: `%PdfFiles%`
-- Merged PDF path: `%PdfFolder%\merged.pdf`
-- Save to: `MergedPdf`
-
-**`Display message`** → `Merged %PdfFiles.Count% files into merged.pdf` *(re-running overwrites merged.pdf; rename it if you want to keep it)*
+&nbsp;&nbsp;**`If`** → `%PdfFiles.Count%` **Less than or equal to** `1`
+&nbsp;&nbsp;&nbsp;&nbsp;**`Display message`** → `Need at least 2 PDFs in that folder to merge.`
+&nbsp;&nbsp;**`Else`**
+&nbsp;&nbsp;&nbsp;&nbsp;**`Merge PDF files`** → PDF files `%PdfFiles%`, Merged PDF path `%PdfFolder%\merged.pdf`, save to `MergedPdf`
+&nbsp;&nbsp;&nbsp;&nbsp;**`Display message`** → `Merged %PdfFiles.Count% files into merged.pdf` *(re-running overwrites merged.pdf; rename it to keep it)*
 
 ---
 
