@@ -25,8 +25,9 @@ Each flow folder is self-contained:
 |------|------|--------------|
 | [downloads-janitor](desktop/downloads-janitor/) | Desktop | Sorts your Downloads folder into category subfolders (Images, Documents, ...). Safe: never overwrites, skips in-progress downloads, has a dry-run. |
 | [resume-router](desktop/resume-router/) | Desktop | Moves downloaded `resume - <slug>` files into their matching per-job application folder by exact-name match. Self-cleans Downloads. |
+| [pdf-toolkit](desktop/pdf-toolkit/) | Desktop | One menu-driven flow to merge, split, or compress PDFs. Merge/split are native PAD; compress uses Ghostscript. Outputs are new files, originals untouched. |
 
-More on the way: stale-application reminders, receipt logging, web-table scraping.
+More on the way: email auto-triage, receipt logging, desktop declutter.
 
 ## How to use a desktop flow
 

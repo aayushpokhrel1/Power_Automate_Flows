@@ -1,0 +1,46 @@
+# =============================================================================
+# PDF Toolkit  -  Power Automate Desktop paste-in
+# =============================================================================
+# One flow, a menu: Merge / Split / Compress.
+# Merge + Split are native PAD actions. Compress needs Ghostscript (free):
+# set GsExe below to gswin64c.exe (on PATH, or a full path).
+# Best-effort paste; recipe.md is the source of truth if anything looks off.
+# =============================================================================
+
+# ---- 8< ---- paste from here ---- 8< ----
+
+Display.SelectFromListDialog Title: $'''PDF Toolkit''' Message: $'''What do you want to do?''' ItemList: $'''Merge\nSplit\nCompress''' SelectedItem=> Choice SelectedIndex=> ChoiceIndex ButtonPressed=> ButtonPressed
+IF ButtonPressed <> $'''OK''' THEN
+    EXIT Code: 0 ErrorMessage: $''''''
+END
+SET GsExe TO $'''gswin64c.exe'''
+SWITCH Choice
+    CASE $'''Merge'''
+        Display.SelectFolder Description: $'''Pick a folder of PDFs to merge''' SelectedFolder=> PdfFolder ButtonPressed=> FolderButton
+        IF FolderButton = $'''Select''' THEN
+            Folder.GetFiles Folder: $'''%PdfFolder%''' FileFilter: $'''*.pdf''' IncludeSubfolders: False FailOnAccessDenied: True SortBy1: Folder.SortBy.Name SortDescending1: False Files=> PdfFiles
+            IF PdfFiles.Count <= 1 THEN
+                Display.ShowMessageDialog.ShowMessage Title: $'''PDF Toolkit''' Message: $'''Need at least 2 PDFs in that folder to merge.''' Icon: Display.Icon.None Buttons: Display.Buttons.OK DefaultButton: Display.DefaultButton.Button1 IsTopMost: False ButtonPressed=> B1
+            ELSE
+                PDF.MergeFiles PDFFiles: PdfFiles MergedPDFPath: $'''%PdfFolder%\\merged.pdf''' MergedPDF=> MergedPdf
+                Display.ShowMessageDialog.ShowMessage Title: $'''PDF Toolkit''' Message: $'''Merged %PdfFiles.Count% files into merged.pdf''' Icon: Display.Icon.None Buttons: Display.Buttons.OK DefaultButton: Display.DefaultButton.Button1 IsTopMost: False ButtonPressed=> B2
+            END
+        END
+    CASE $'''Split'''
+        Display.SelectFileDialog Title: $'''Pick a PDF to split''' FileFilter: $'''*.pdf''' SelectedFile=> SrcFile ButtonPressed=> FileButton
+        Display.InputDialog Title: $'''Split''' Message: $'''Pages to extract (e.g. 1-3 or 2,5,7)''' DefaultValue: $'''1''' InputType: Display.InputType.SingleLine UserInput=> Pages ButtonPressed=> InputButton
+        PDF.ExtractPagesToFile PDFFile: $'''%SrcFile.FullName%''' PageSelection: $'''%Pages%''' ExtractedPDFPath: $'''%SrcFile.Directory%\\%SrcFile.NameWithoutExtension%_pages.pdf''' ExtractedPDF=> ExtractedPdf
+        Display.ShowMessageDialog.ShowMessage Title: $'''PDF Toolkit''' Message: $'''Extracted pages %Pages% into %SrcFile.NameWithoutExtension%_pages.pdf''' Icon: Display.Icon.None Buttons: Display.Buttons.OK DefaultButton: Display.DefaultButton.Button1 IsTopMost: False ButtonPressed=> B3
+    CASE $'''Compress'''
+        Display.SelectFileDialog Title: $'''Pick a PDF to compress''' FileFilter: $'''*.pdf''' SelectedFile=> SrcFile ButtonPressed=> FileButton
+        SET OutPdf TO $'''%SrcFile.Directory%\\%SrcFile.NameWithoutExtension%_small.pdf'''
+        ON ERROR
+        END
+        System.RunApplication ApplicationPath: $'''%GsExe%''' CommandLineArguments: $'''-sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/ebook -dNOPAUSE -dQUIET -dBATCH -sOutputFile="%OutPdf%" "%SrcFile.FullName%"''' WindowStyle: System.ProcessWindowStyle.Hidden WaitForCompletion: True
+        IF File.Exists File: $'''%OutPdf%''' THEN
+            File.GetFileInfo File: $'''%OutPdf%''' FileSize=> NewSize
+            Display.ShowMessageDialog.ShowMessage Title: $'''PDF Toolkit''' Message: $'''Compressed: %SrcFile.Size% bytes -> %NewSize% bytes  (%SrcFile.NameWithoutExtension%_small.pdf)''' Icon: Display.Icon.None Buttons: Display.Buttons.OK DefaultButton: Display.DefaultButton.Button1 IsTopMost: False ButtonPressed=> B4
+        ELSE
+            Display.ShowMessageDialog.ShowMessage Title: $'''PDF Toolkit''' Message: $'''Compress failed. Is Ghostscript installed? Set GsExe to the full path of gswin64c.exe.''' Icon: Display.Icon.None Buttons: Display.Buttons.OK DefaultButton: Display.DefaultButton.Button1 IsTopMost: False ButtonPressed=> B5
+        END
+END
