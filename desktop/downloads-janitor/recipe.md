@@ -117,10 +117,26 @@ Add an **`Else`** to that outer `If` (the category check):
 2. If **Categorized is 0** but you have known files, your PAD returns extensions *without* the leading dot, remove the dots from the eight `...Ext` list variables and rerun.
 3. When happy, set `DryRun` to `False` and run for real. Moves use **Do nothing on conflict**, so a same-name clash is left in Downloads, never overwritten.
 
-## Schedule it (optional)
+## Schedule it (free tier)
 
-- **Power Automate Desktop console** → right-click the flow → schedule, or
-- Windows **Task Scheduler** → **Start a program** → `PAD.Console.Host.exe` with the flow name, on your trigger (daily, at logon, ...).
+Cloud-scheduled desktop flows need a premium plan. On free tier you schedule it with **Windows Task Scheduler**, which runs the flow *attended* (you signed in; PAD launches to run it). Fully unattended (locked machine) needs premium.
+
+**Step 1, confirm the run link works.**
+Right-click Desktop → **New → Shortcut**. For the location, paste (URL-encode spaces as `%20`):
+```
+ms-powerautomate:/console/flow/run?workflowName=Downloads%20Janitor
+```
+Name it `Run Janitor` and double-click it. Power Automate should open and run the flow. If it does, the link is good. (Use your flow's exact name; `Downloads Janitor` → `Downloads%20Janitor`.)
+
+**Step 2, schedule it.**
+Open **Task Scheduler** → **Create Basic Task**:
+- Name: `Downloads Janitor`
+- Trigger: Daily (or your choice), e.g. 6:00 PM
+- Action: **Start a program**
+  - Program/script: `cmd.exe`
+  - Add arguments: `/c start "" "ms-powerautomate:/console/flow/run?workflowName=Downloads%20Janitor"`
+
+That's it, it fires on schedule as long as you're logged in. Set `DryRun` to `False` in the flow first, or the scheduled run only reports.
 
 ## Ideas to extend later
 
